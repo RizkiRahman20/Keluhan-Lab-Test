@@ -25,6 +25,7 @@ class LaporanKeluhan extends Model
         'file_foto',
         'id_user',
         'id_penugasan',
+        'id_lab',
     ];
 
     protected $casts = [
@@ -60,5 +61,10 @@ class LaporanKeluhan extends Model
     public function perbaikan(): HasOne
     {
         return $this->hasOne(Perbaikan::class, 'id_laporan', 'no_laporan');
+    }
+
+    public function lab() : BelongsTo
+    {
+        return $this->belongsTo(Lab::class, 'id_lab', 'id_lab');
     }
 }
