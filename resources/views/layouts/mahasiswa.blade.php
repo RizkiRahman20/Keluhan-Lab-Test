@@ -183,7 +183,10 @@
 <nav class="navbar">
     <div class="navbar-inner">
         <a href="{{ route('mahasiswa.form') }}" class="navbar-brand">
-            <div class="navbar-logo">ICT LAB</div>
+            <img
+                        src="{{ asset('images/logoict.jpg') }}"
+                        alt="Logo"
+                    width="32" height="32" class="navbar-logo">
             <div class="navbar-name">
                 Sistem Pelaporan
                 <span>Keluhan Laboratorium</span>
