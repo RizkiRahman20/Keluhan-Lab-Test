@@ -3,10 +3,10 @@
 namespace App\Policies;
 
 use App\Models\User;
-use App\Models\Perbaikan;
+use App\Models\Lab;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
-class PerbaikanPolicy
+class LabPolicy
 {
     use HandlesAuthorization;
 
@@ -15,15 +15,15 @@ class PerbaikanPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_perbaikan');
+        return $user->can('view_any_lab');
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Perbaikan $perbaikan): bool
+    public function view(User $user, Lab $lab): bool
     {
-        return $user->can('view_perbaikan');
+        return $user->can('view_lab');
     }
 
     /**
@@ -31,23 +31,23 @@ class PerbaikanPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_perbaikan');
+        return $user->can('create_lab');
     }
 
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Perbaikan $perbaikan): bool
+    public function update(User $user, Lab $lab): bool
     {
-        return $user->can('update_perbaikan');
+        return $user->can('update_lab');
     }
 
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Perbaikan $perbaikan): bool
+    public function delete(User $user, Lab $lab): bool
     {
-        return $user->can('delete_perbaikan');
+        return $user->can('delete_lab');
     }
 
     /**
@@ -55,15 +55,15 @@ class PerbaikanPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_perbaikan');
+        return $user->can('delete_any_lab');
     }
 
     /**
      * Determine whether the user can permanently delete.
      */
-    public function forceDelete(User $user, Perbaikan $perbaikan): bool
+    public function forceDelete(User $user, Lab $lab): bool
     {
-        return $user->can('force_delete_perbaikan');
+        return $user->can('force_delete_lab');
     }
 
     /**
@@ -71,15 +71,15 @@ class PerbaikanPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_perbaikan');
+        return $user->can('force_delete_any_lab');
     }
 
     /**
      * Determine whether the user can restore.
      */
-    public function restore(User $user, Perbaikan $perbaikan): bool
+    public function restore(User $user, Lab $lab): bool
     {
-        return $user->can('restore_perbaikan');
+        return $user->can('restore_lab');
     }
 
     /**
@@ -87,15 +87,15 @@ class PerbaikanPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_perbaikan');
+        return $user->can('restore_any_lab');
     }
 
     /**
      * Determine whether the user can replicate.
      */
-    public function replicate(User $user, Perbaikan $perbaikan): bool
+    public function replicate(User $user, Lab $lab): bool
     {
-        return $user->can('replicate_perbaikan');
+        return $user->can('replicate_lab');
     }
 
     /**
@@ -103,6 +103,6 @@ class PerbaikanPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_perbaikan');
+        return $user->can('reorder_lab');
     }
 }

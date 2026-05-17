@@ -23,9 +23,14 @@ class PerbaikanResource extends Resource
     protected static ?string $pluralLabel = 'Kelola Perbaikan';
     protected static ?int $navigationSort = 1;
 
-    public static function canAccess(): bool
+    public static function canViewAny(): bool
     {
-        return Auth::user()?->isAdminLab() || Auth::user()?->isSPV();
+        return Auth::user()?->can('view_any_perbaikan');
+    }
+    
+    public static function canUpdate(): bool
+    {
+        return Auth::user()?->can('update_perbaikan');
     }
 
     public static function form(Form $form): Form
@@ -94,7 +99,7 @@ class PerbaikanResource extends Resource
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
                     ->visible(fn (Perbaikan $record) =>
-                        Auth::user()?->isAdminLab() && $record->status_perbaikan !== 'selesai'
+                        Auth::user()?->hasRole('admin_lab') && $record->status_perbaikan !== 'selesai'
                     )
                     ->form([
                         Forms\Components\Select::make('status_perbaikan')
@@ -142,7 +147,7 @@ class PerbaikanResource extends Resource
                     ->icon('heroicon-o-check-badge')
                     ->color('success')
                     ->visible(fn (Perbaikan $record) =>
-                        Auth::user()?->isSPV() &&
+                        Auth::user()?->hasRole('pic') &&
                         $record->status_perbaikan === 'selesai' &&
                         $record->app_validasi === 'menunggu'
                     )

@@ -21,10 +21,11 @@ class UserResource extends Resource
     protected static ?string $pluralLabel = 'Manajemen User';
     protected static ?int $navigationSort = 2;
 
-    public static function canAccess(): bool
+    public static function canViewAny(): bool
     {
-        return Auth::user()?->isSPVKedisiplinan() ?? false;
+        return Auth::user()?->hasRole(['spv_kedisiplinan', 'super_admin']);
     }
+
 
     public static function form(Form $form): Form
     {

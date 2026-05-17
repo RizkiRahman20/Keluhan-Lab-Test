@@ -22,9 +22,9 @@ class LabResource extends Resource
     protected static ?int $navigationSort = 1;
 
     // Hanya SPV Kedisiplinan yang bisa akses
-    public static function canAccess(): bool
+    public static function canViewAny(): bool
     {
-        return Auth::user()?->isSPVKedisiplinan() ?? false;
+        return Auth::user()?->hasRole(['spv_kedisiplinan', 'super_admin']);
     }
 
     public static function form(Form $form): Form

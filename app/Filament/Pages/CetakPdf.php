@@ -45,12 +45,13 @@ class CetakPdf extends Page implements HasForms
 
     public function cetak(): void
     {
-        $params = http_build_query(array_filter($this->data));
-        $this->redirect('/pdf/riwayat?' . $params);
+        $this->redirect(
+            route('internal.pdf.riwayat', array_filter($this->data))
+        );
     }
 
     public static function canAccess(): bool
     {
-        return Auth::user()?->isSPV() ?? false;
+        return Auth::user()?->can('page_CetakPdf');
     }
 }

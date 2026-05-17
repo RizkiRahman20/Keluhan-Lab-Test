@@ -43,7 +43,7 @@ Route::middleware(['auth'])->prefix('internal')->name('internal.')->group(functi
     // Dipanggil dari Filament Page CetakPdf
     // Contoh: /internal/pdf/riwayat-perbaikan?id_lab=1&dari=2024-01-01&sampai=2024-12-31
     Route::get('/pdf/riwayat-perbaikan', [PdfController::class, 'cetakRiwayat'])
-        ->name('pdf.riwayat-perbaikan');
+        ->name('pdf.riwayat');
 
     // Cetak PDF detail satu laporan
     Route::get('/pdf/laporan/{no_laporan}', [PdfController::class, 'cetakDetailLaporan'])

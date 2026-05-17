@@ -22,10 +22,11 @@ class PenugasanUserLabResource extends Resource
     protected static ?string $pluralLabel = 'Penugasan User ke Lab';
     protected static ?int $navigationSort = 3;
 
-    public static function canAccess(): bool
+    public static function canViewAny(): bool
     {
-        return Auth::user()?->isSPVKedisiplinan() ?? false;
+        return Auth::user()?->hasRole(['spv_kedisiplinan', 'super_admin']);
     }
+
 
     public static function form(Form $form): Form
     {

@@ -8,7 +8,6 @@ use App\Models\Perbaikan;
 use App\Models\PenugasanUserLab;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
@@ -23,17 +22,42 @@ use Illuminate\Support\Facades\Auth;
 
 class LaporanKeluhanResource extends Resource
 {
-    protected static ?string $model        = LaporanKeluhan::class;
-    protected static ?string $navigationIcon  = 'heroicon-o-document-text';
+    protected static ?string $model = LaporanKeluhan::class;
+    protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static ?string $navigationGroup = 'Laporan';
-    protected static ?string $label          = 'Laporan Keluhan';
-    protected static ?string $pluralLabel    = 'Daftar Laporan Masuk';
-    protected static ?int    $navigationSort = 1;
+    protected static ?string $label = 'Laporan Keluhan';
+    protected static ?string $pluralLabel = 'Daftar Laporan Masuk';
+    protected static ?int $navigationSort = 1;
 
-    public static function canAccess(): bool
+    public static function canViewAny(): bool
     {
+        return Auth::user()?->can('view_any_laporan::keluhan');
+    }
+
+    public static function canView($record): bool
+    {
+        return Auth::user()?->can('view_laporan::keluhan');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery()->with(['perbaikan', 'penugasan.lab', 'lab']);
         $user = Auth::user();
-        return $user?->isSPV() || $user?->isAdminLab();
+
+        // PIC & Admin Lab — filter berdasarkan lab yang ditugaskan
+        if (!$user->isSPVKedisiplinan()) {
+            $labIds = $user->labs()->pluck('labs.id_lab');
+            $query->where(function ($q) use ($labIds) {
+                $q->whereIn('id_lab', $labIds)
+                    ->orWhereHas(
+                        'penugasan',
+                        fn($q2) =>
+                        $q2->whereIn('id_lab', $labIds)
+                    );
+            });
+        }
+
+        return $query;
     }
 
     /*
@@ -81,20 +105,20 @@ class LaporanKeluhanResource extends Resource
                     TextEntry::make('kategori')
                         ->label('Kategori Kerusakan')
                         ->badge()
-                        ->color(fn ($state) => match ($state) {
-                            'PC'     => 'warning',
+                        ->color(fn($state) => match ($state) {
+                            'PC' => 'warning',
                             'non_PC' => 'info',
-                            default  => 'gray',
+                            default => 'gray',
                         }),
 
                     TextEntry::make('approval')
                         ->label('Status Approval')
                         ->badge()
-                        ->color(fn ($state) => match ($state) {
-                            'menunggu'  => 'warning',
+                        ->color(fn($state) => match ($state) {
+                            'menunggu' => 'warning',
                             'disetujui' => 'success',
-                            'ditolak'   => 'danger',
-                            default     => 'gray',
+                            'ditolak' => 'danger',
+                            default => 'gray',
                         }),
 
                     TextEntry::make('catatan_lpr')
@@ -112,40 +136,40 @@ class LaporanKeluhanResource extends Resource
                         ->disk('public')     // wajib: disk public
                         ->height(400)        // tinggi preview
                         ->extraImgAttributes(['style' => 'border-radius:12px;object-fit:cover;width:100%;'])
-                        ->visible(fn ($record) => filled($record->file_foto)),
+                        ->visible(fn($record) => filled($record->file_foto)),
 
                     TextEntry::make('no_foto_placeholder')
                         ->label('')
                         ->default('Mahasiswa tidak melampirkan foto kerusakan.')
                         ->color('gray')
-                        ->visible(fn ($record) => !filled($record->file_foto)),
+                        ->visible(fn($record) => !filled($record->file_foto)),
                 ]),
 
             Section::make('Informasi Perbaikan')
                 ->icon('heroicon-o-wrench-screwdriver')
                 ->columns(2)
-                ->visible(fn ($record) => $record->perbaikan !== null)
+                ->visible(fn($record) => $record->perbaikan !== null)
                 ->schema([
                     TextEntry::make('perbaikan.status_perbaikan')
                         ->label('Status Perbaikan')
                         ->badge()
-                        ->formatStateUsing(fn ($state) => str_replace('_', ' ', ucfirst($state)))
-                        ->color(fn ($state) => match ($state) {
-                            'antrean'            => 'gray',
-                            'dikerjakan'         => 'warning',
+                        ->formatStateUsing(fn($state) => str_replace('_', ' ', ucfirst($state)))
+                        ->color(fn($state) => match ($state) {
+                            'antrean' => 'gray',
+                            'dikerjakan' => 'warning',
                             'menunggu_sparepart' => 'info',
-                            'selesai'            => 'success',
-                            default              => 'gray',
+                            'selesai' => 'success',
+                            default => 'gray',
                         }),
 
                     TextEntry::make('perbaikan.app_validasi')
                         ->label('Validasi SPV')
                         ->badge()
-                        ->color(fn ($state) => match ($state) {
-                            'menunggu'    => 'warning',
-                            'divalidasi'  => 'success',
-                            'dikembalikan'=> 'danger',
-                            default       => 'gray',
+                        ->color(fn($state) => match ($state) {
+                            'menunggu' => 'warning',
+                            'divalidasi' => 'success',
+                            'dikembalikan' => 'danger',
+                            default => 'gray',
                         }),
 
                     TextEntry::make('perbaikan.tgl_mulai')
@@ -167,13 +191,13 @@ class LaporanKeluhanResource extends Resource
                         ->label('Alasan Penolakan / Dikembalikan')
                         ->columnSpanFull()
                         ->color('danger')
-                        ->visible(fn ($record) => filled($record->perbaikan?->alasan_penolakan)),
+                        ->visible(fn($record) => filled($record->perbaikan?->alasan_penolakan)),
                 ]),
 
             // Foto bukti perbaikan dari admin
             Section::make('Foto Bukti Perbaikan')
                 ->icon('heroicon-o-camera')
-                ->visible(fn ($record) => filled($record->perbaikan?->ft_perbaikan))
+                ->visible(fn($record) => filled($record->perbaikan?->ft_perbaikan))
                 ->schema([
                     ImageEntry::make('perbaikan.ft_perbaikan')
                         ->label('')
@@ -228,9 +252,14 @@ class LaporanKeluhanResource extends Resource
                     ->default('—')
                     ->searchable(),
 
-                Tables\Columns\BadgeColumn::make('kategori')
+                Tables\Columns\TextColumn::make('kategori')
                     ->label('Kategori')
-                    ->colors(['warning' => 'PC', 'info' => 'non_PC']),
+                    ->badge()
+                    ->color(fn($state) => match ($state) {
+                        'PC' => 'warning',
+                        'non_PC' => 'info',
+                        default => 'gray',
+                    }),
 
                 // Ikon apakah ada foto atau tidak
                 Tables\Columns\IconColumn::make('file_foto')
@@ -240,31 +269,33 @@ class LaporanKeluhanResource extends Resource
                     ->falseIcon('heroicon-o-x-circle')
                     ->trueColor('success')
                     ->falseColor('gray')
-                    ->state(fn ($record) => filled($record->file_foto)),
+                    ->state(fn($record) => filled($record->file_foto)),
 
-                Tables\Columns\BadgeColumn::make('approval')
+                Tables\Columns\TextColumn::make('approval')
                     ->label('Status')
-                    ->colors([
-                        'warning' => 'menunggu',
-                        'success' => 'disetujui',
-                        'danger'  => 'ditolak',
-                    ]),
+                    ->badge()
+                    ->color(fn($state) => match ($state) {
+                        'menunggu' => 'warning',
+                        'disetujui' => 'success',
+                        'ditolak' => 'danger',
+                        default => 'gray',
+                    }),
             ])
             ->defaultSort('tgl_lapor', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('approval')
                     ->label('Status')
                     ->options([
-                        'menunggu'  => 'Menunggu',
+                        'menunggu' => 'Menunggu',
                         'disetujui' => 'Disetujui',
-                        'ditolak'   => 'Ditolak',
+                        'ditolak' => 'Ditolak',
                     ]),
                 Tables\Filters\SelectFilter::make('kategori')
                     ->label('Kategori')
                     ->options(['PC' => 'PC', 'non_PC' => 'Non PC']),
                 Tables\Filters\Filter::make('ada_foto')
                     ->label('Ada Foto')
-                    ->query(fn ($query) => $query->whereNotNull('file_foto')),
+                    ->query(fn($query) => $query->whereNotNull('file_foto')),
             ])
             ->actions([
                 // Tombol View — membuka halaman infolist dengan foto
@@ -276,7 +307,8 @@ class LaporanKeluhanResource extends Resource
                     ->label('Setujui')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn (LaporanKeluhan $record) =>
+                    ->visible(
+                        fn(LaporanKeluhan $record) =>
                         Auth::user()?->isSPV() && $record->approval === 'menunggu'
                     )
                     ->requiresConfirmation()
@@ -286,11 +318,13 @@ class LaporanKeluhanResource extends Resource
                             ->options(function (LaporanKeluhan $record) {
                                 return PenugasanUserLab::with(['user', 'lab'])
                                     ->where('status_aktif', 'aktif')
-                                    ->whereHas('user', fn ($q) =>
+                                    ->whereHas(
+                                        'user',
+                                        fn($q) =>
                                         $q->where('role_user', 'admin_lab')
                                     )
                                     ->get()
-                                    ->mapWithKeys(fn ($p) => [
+                                    ->mapWithKeys(fn($p) => [
                                         $p->id_penugasan =>
                                             $p->user->nm_user . ' — ' . $p->lab->nm_lab
                                     ]);
@@ -299,14 +333,14 @@ class LaporanKeluhanResource extends Resource
                     ])
                     ->action(function (LaporanKeluhan $record, array $data) {
                         $record->update([
-                            'approval'     => 'disetujui',
-                            'id_user'      => Auth::id(),
+                            'approval' => 'disetujui',
+                            'id_user' => Auth::id(),
                             'id_penugasan' => $data['id_penugasan'],
                         ]);
                         Perbaikan::create([
                             'status_perbaikan' => 'antrean',
-                            'app_validasi'     => 'menunggu',
-                            'id_laporan'       => $record->no_laporan,
+                            'app_validasi' => 'menunggu',
+                            'id_laporan' => $record->no_laporan,
                         ]);
                         Notification::make()
                             ->title('Laporan disetujui dan didelegasikan!')
@@ -318,7 +352,8 @@ class LaporanKeluhanResource extends Resource
                     ->label('Tolak')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->visible(fn (LaporanKeluhan $record) =>
+                    ->visible(
+                        fn(LaporanKeluhan $record) =>
                         Auth::user()?->isSPV() && $record->approval === 'menunggu'
                     )
                     ->requiresConfirmation()
@@ -330,13 +365,13 @@ class LaporanKeluhanResource extends Resource
                     ->action(function (LaporanKeluhan $record, array $data) {
                         $record->update([
                             'approval' => 'ditolak',
-                            'id_user'  => Auth::id(),
+                            'id_user' => Auth::id(),
                         ]);
                         Perbaikan::create([
                             'status_perbaikan' => 'selesai',
                             'alasan_penolakan' => $data['alasan_penolakan'],
-                            'app_validasi'     => 'divalidasi',
-                            'id_laporan'       => $record->no_laporan,
+                            'app_validasi' => 'divalidasi',
+                            'id_laporan' => $record->no_laporan,
                         ]);
                         Notification::make()
                             ->title('Laporan ditolak.')
@@ -345,40 +380,11 @@ class LaporanKeluhanResource extends Resource
             ]);
     }
 
-    // Filter query berdasarkan role
-    public static function getEloquentQuery(): Builder
-    {
-        $query = parent::getEloquentQuery()
-            ->with(['perbaikan', 'penugasan.lab', 'lab']);
-
-        $user = Auth::user();
-
-        if ($user?->isAdminLab()) {
-            $labIds = $user->labs()->pluck('id_lab');
-            $query->where(function ($q) use ($labIds) {
-                $q->whereIn('id_lab', $labIds)
-                  ->orWhereHas('penugasan', fn ($q2) =>
-                      $q2->whereIn('id_lab', $labIds)
-                  );
-            });
-        } elseif ($user?->isSPV() && !$user->isSPVKedisiplinan()) {
-            $labIds = $user->labs()->pluck('id_lab');
-            $query->where(function ($q) use ($labIds) {
-                $q->whereIn('id_lab', $labIds)
-                  ->orWhereHas('penugasan', fn ($q2) =>
-                      $q2->whereIn('id_lab', $labIds)
-                  );
-            });
-        }
-
-        return $query;
-    }
-
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListLaporanKeluhans::route('/'),
-            'view'   => Pages\ViewLaporanKeluhan::route('/{record}'),
+            'index' => Pages\ListLaporanKeluhans::route('/'),
+            'view' => Pages\ViewLaporanKeluhan::route('/{record}'),
         ];
     }
 }

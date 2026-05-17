@@ -32,6 +32,6 @@ class MonitoringDashboard extends Page
 
     public static function canAccess(): bool
     {
-        return Auth::user()?->isSPV() ?? false;
+        return Auth::user()?->can('page_MonitoringDashboard');
     }
 }

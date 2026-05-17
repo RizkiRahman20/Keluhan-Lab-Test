@@ -15,6 +15,6 @@ class KanbanBoard extends Page
 
     public static function canAccess(): bool
     {
-        return Auth::user()?->isAdminLab() || Auth::user()?->isSPV();
+        return Auth::user()?->can('page_KanbanBoard');
     }
 }
