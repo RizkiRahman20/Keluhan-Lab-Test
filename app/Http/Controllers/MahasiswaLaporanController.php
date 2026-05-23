@@ -13,11 +13,13 @@ class MahasiswaLaporanController extends Controller
         return view('mahasiswa.home');
     }
     // GET / — Halaman beranda dengan form laporan
-    public function index()
-    {
-        $labs = Lab::where('status_lab', 'aktif')->orderBy('nm_lab')->get();
-        return view('mahasiswa.form', compact('labs'));
-    }
+    public function index(){
+    $labs = Lab::where('status_lab', 'aktif')
+        ->orderByRaw('CAST(REGEXP_REPLACE(kd_lab, "[^0-9]", "") AS UNSIGNED)')
+        ->get();
+
+    return view('mahasiswa.form', compact('labs'));
+    }   
 
     // POST /laporan — Simpan laporan baru
     public function store(Request $request)
@@ -84,55 +86,52 @@ class MahasiswaLaporanController extends Controller
 
     // GET /status — Halaman status laporan (publik + cari laporan sendiri)
     public function status(Request $request)
-    {
-        $noLaporan = $request->query('no_laporan');
-        $laporan   = null;
+{
+    $noLaporan = $request->query('no_laporan');
+    $laporan   = null;
 
-        // Cari laporan spesifik berdasarkan nomor (milik mahasiswa sendiri)
-        if ($noLaporan) {
-            $laporan = LaporanKeluhan::with([
-                'perbaikan.riwayatPerbaikans',
-                'penugasan.lab',
-                'lab',
-            ])->where('no_laporan', $noLaporan)->first();
-        }
-
-        // Ambil SEMUA laporan (publik) dengan filter & pagination
-        $query = LaporanKeluhan::with(['perbaikan', 'penugasan.lab', 'lab'])
-            ->orderBy('tgl_lapor', 'desc');
-
-        // Filter per lab
-        if ($request->filled('filter_lab')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('id_lab', $request->filter_lab)
-                  ->orWhereHas('penugasan', fn ($q2) =>
-                      $q2->where('id_lab', $request->filter_lab)
-                  );
-            });
-        }
-
-        // Filter per kategori
-        if ($request->filled('filter_kategori')) {
-            $query->where('kategori', $request->filter_kategori);
-        }
-
-        // Filter per status approval
-        if ($request->filled('filter_status')) {
-            $query->where('approval', $request->filter_status);
-        }
-
-        $semuaLaporan = $query->paginate(10)->withQueryString();
-
-        // List lab untuk dropdown filter
-        $labs = Lab::where('status_lab', 'aktif')->orderBy('nm_lab')->get();
-
-        return view('mahasiswa.status', compact(
-            'laporan',
-            'noLaporan',
-            'semuaLaporan',
-            'labs'
-        ));
+    if ($noLaporan) {
+        $laporan = LaporanKeluhan::with([
+            'perbaikan.riwayatPerbaikans',
+            'penugasan.lab',
+            'lab',
+        ])->where('no_laporan', $noLaporan)->first();
     }
+
+    $query = LaporanKeluhan::with(['perbaikan', 'penugasan.lab', 'lab'])
+        ->orderBy('tgl_lapor', 'desc');
+
+    if ($request->filled('filter_lab')) {
+        $query->where(function ($q) use ($request) {
+            $q->where('id_lab', $request->filter_lab)
+              ->orWhereHas('penugasan', fn ($q2) =>
+                  $q2->where('id_lab', $request->filter_lab)
+              );
+        });
+    }
+
+    if ($request->filled('filter_kategori')) {
+        $query->where('kategori', $request->filter_kategori);
+    }
+
+    if ($request->filled('filter_status')) {
+        $query->where('approval', $request->filter_status);
+    }
+
+    $semuaLaporan = $query->paginate(10)->withQueryString();
+
+    // ✅ Dropdown filter lab juga diurutkan dengan benar
+    $labs = Lab::where('status_lab', 'aktif')
+        ->orderByRaw('CAST(REGEXP_REPLACE(kd_lab, "[^0-9]", "") AS UNSIGNED)')
+        ->get();
+
+    return view('mahasiswa.status', compact(
+        'laporan',
+        'noLaporan',
+        'semuaLaporan',
+        'labs'
+    ));
+}
 
     // GET /status/{no_laporan} — Cek status satu laporan (support JSON & redirect)
     public function showStatus(string $noLaporan)
